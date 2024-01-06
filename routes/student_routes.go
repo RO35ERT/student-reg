@@ -4,8 +4,6 @@ package routes
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"student-api/models"
 
@@ -22,26 +20,23 @@ func StudentRoutes(db *gorm.DB) *chi.Mux {
 
 func createStudent(db *gorm.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        var student models.Student
-        if err := r.ParseForm(); err != nil {
+        // Decode JSON payload from request body
+        var studentReq models.StudentRequest
+        if err := json.NewDecoder(r.Body).Decode(&studentReq); err != nil {
             http.Error(w, "Invalid request payload", http.StatusBadRequest)
             return
         }
-        student.Name = r.FormValue("name")
-        student.Email = r.FormValue("email")
+        
+        // Create student object from decoded request
+        student := models.Student{Name: studentReq.Name, Email: studentReq.Email}
 
-		body, err := ioutil.ReadAll(r.Body)
-        if err != nil {
-            http.Error(w, "Failed to read request body", http.StatusInternalServerError)
-            return
-        }
-        log.Printf("Request Body: %s\n", body)
-
+        // Create student record in the database
         if err := db.Create(&student).Error; err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
-        w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusCreated)
+        json.NewEncoder(w).Encode(student)
     }
 }
 

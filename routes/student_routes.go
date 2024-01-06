@@ -20,17 +20,17 @@ func StudentRoutes(db *gorm.DB) *chi.Mux {
 
 func createStudent(db *gorm.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        // Decode JSON payload from request body
+
         var studentReq models.StudentRequest
         if err := json.NewDecoder(r.Body).Decode(&studentReq); err != nil {
             http.Error(w, "Invalid request payload", http.StatusBadRequest)
             return
         }
         
-        // Create student object from decoded request
+
         student := models.Student{Name: studentReq.Name, Email: studentReq.Email}
 
-        // Create student record in the database
+
         if err := db.Create(&student).Error; err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return

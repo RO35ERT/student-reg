@@ -5,6 +5,7 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"student-api/models"
 
 	"github.com/go-chi/chi"
@@ -15,6 +16,7 @@ func StudentRoutes(db *gorm.DB) *chi.Mux {
     r := chi.NewRouter()
     r.Post("/students", createStudent(db))
     r.Get("/students", getStudents(db))
+	r.Put("/students/{id}", updateStudent(db))
     return r
 }
 
@@ -58,5 +60,34 @@ func getStudents(db *gorm.DB) http.HandlerFunc {
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusOK)
         w.Write(jsonResponse)
+    }
+}
+
+func updateStudent(db *gorm.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Extract student ID from URL parameter
+        studentIDStr := chi.URLParam(r, "id")
+        studentID, err := strconv.Atoi(studentIDStr)
+        if err != nil {
+            http.Error(w, "Invalid student ID", http.StatusBadRequest)
+            return
+        }
+
+        // Decode JSON payload from request body
+        var updatedStudent models.Student
+        if err := json.NewDecoder(r.Body).Decode(&updatedStudent); err != nil {
+            http.Error(w, "Invalid request payload", http.StatusBadRequest)
+            return
+        }
+
+        // Update student record in the database
+        if err := db.Model(&models.Student{}).Where("id = ?", studentID).Updates(updatedStudent).Error; err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+
+        // Send success response
+        w.WriteHeader(http.StatusOK)
+        json.NewEncoder(w).Encode(updatedStudent) // Send the updated student data in the response
     }
 }

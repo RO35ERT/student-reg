@@ -18,6 +18,7 @@ func StudentRoutes(db *gorm.DB) *chi.Mux {
     r.Get("/students", getStudents(db))
 	r.Put("/students/{id}", updateStudent(db))
 	r.Delete("/students/{id}", deleteStudent(db))
+	r.Get("/students/{id}", getStudent(db))
     return r
 }
 
@@ -42,6 +43,31 @@ func createStudent(db *gorm.DB) http.HandlerFunc {
         json.NewEncoder(w).Encode(student)
     }
 }
+
+func getStudent(db *gorm.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Extract student ID from URL parameter
+        studentIDStr := chi.URLParam(r, "id")
+        studentID, err := strconv.Atoi(studentIDStr)
+        if err != nil {
+            http.Error(w, "Invalid student ID", http.StatusBadRequest)
+            return
+        }
+
+        // Fetch specific student record from the database by ID
+        var student models.Student
+        if err := db.First(&student, studentID).Error; err != nil {
+            http.Error(w, "Student not found", http.StatusNotFound)
+            return
+        }
+
+        // Send success response with the fetched student data
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+        json.NewEncoder(w).Encode(student)
+    }
+}
+
 
 func getStudents(db *gorm.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {

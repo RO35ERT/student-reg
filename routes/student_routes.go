@@ -17,6 +17,7 @@ func StudentRoutes(db *gorm.DB) *chi.Mux {
     r.Post("/students", createStudent(db))
     r.Get("/students", getStudents(db))
 	r.Put("/students/{id}", updateStudent(db))
+	r.Delete("/students/{id}", deleteStudent(db))
     return r
 }
 
@@ -89,5 +90,27 @@ func updateStudent(db *gorm.DB) http.HandlerFunc {
         // Send success response
         w.WriteHeader(http.StatusOK)
         json.NewEncoder(w).Encode(updatedStudent) // Send the updated student data in the response
+    }
+}
+
+func deleteStudent(db *gorm.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Extract student ID from URL parameter
+        studentIDStr := chi.URLParam(r, "id")
+        studentID, err := strconv.Atoi(studentIDStr)
+        if err != nil {
+            http.Error(w, "Invalid student ID", http.StatusBadRequest)
+            return
+        }
+
+        // Delete student record from the database
+        if err := db.Delete(&models.Student{}, studentID).Error; err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+
+        // Send success response
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("Student deleted successfully"))
     }
 }

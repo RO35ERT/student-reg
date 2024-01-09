@@ -1,5 +1,3 @@
-// db/migrate.go
-
 package db
 
 import (
